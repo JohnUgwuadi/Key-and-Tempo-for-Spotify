@@ -1,0 +1,22 @@
+<resources>
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowTranslucentStatus">true</item>
+
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">#1B1B1B</item>
+        <item name="colorPrimaryDark">#000000</item>
+        <item name="colorAccent">#EF9221</item>
+
+        <item name="colorSurface">#282828</item>
+        <item name="colorOnSurface">#FAFAFA</item>
+
+        <item name="colorOnBackground">#FAFAFA</item>
+        <item name="colorOnBackgroundSecondary">#C6C6C6</item>
+
+        <item name="backgroundColor">#0B0B0B</item>
+
+        <item name="colorControlNormal">#ffffff</item>
+    </style>
+
+</resources>
