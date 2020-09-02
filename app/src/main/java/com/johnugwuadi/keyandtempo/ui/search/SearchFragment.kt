@@ -41,6 +41,14 @@ class SearchFragment : Fragment() {
         return inflater.inflate(R.layout.search, container, false)
     }
 
+
+    override fun onViewStateRestored(savedInstanceState: Bundle?) {
+        super.onViewStateRestored(savedInstanceState)
+        if (search_edittext.text.toString().isNotEmpty()) {
+            showSearchEditText(false)
+        }
+    }
+
     @ExperimentalCoroutinesApi
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -49,11 +57,6 @@ class SearchFragment : Fragment() {
 
         search_card.setOnClickListener {
             showSearchEditText(true)
-        }
-
-        if (!viewModel.query.isNullOrEmpty()) {
-            showSearchEditText(false)
-            search_edittext.setText(viewModel.query)
         }
 
         search_button.setOnClickListener {
