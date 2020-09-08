@@ -1,5 +1,6 @@
 package com.johnugwuadi.keyandtempo.ui.search
 
+import android.util.Log
 import androidx.hilt.lifecycle.ViewModelInject
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -37,10 +38,11 @@ class SearchViewModel @ViewModelInject constructor(
             _searchResultLiveData.value = SearchState.Loading
         }.launchIn(viewModelScope)
 
-        //
+        //Sets result
         searchQuery
             .debounce(200)
             .onEach { query ->
+                Log.e("Query", query)
                 if (this.query == query) {
                     return@onEach
                 }

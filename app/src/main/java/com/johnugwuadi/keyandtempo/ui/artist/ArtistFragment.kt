@@ -23,6 +23,7 @@ class ArtistFragment : Fragment() {
     private lateinit var name: String
     private lateinit var id: String
     private lateinit var controller: ArtistController
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
