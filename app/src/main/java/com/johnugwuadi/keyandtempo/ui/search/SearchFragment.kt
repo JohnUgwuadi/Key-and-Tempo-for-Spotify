@@ -14,6 +14,7 @@ import androidx.core.view.setMargins
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
 import com.johnugwuadi.keyandtempo.R
 import com.johnugwuadi.keyandtempo.data.remote.models.SearchResult
 import com.johnugwuadi.keyandtempo.hideKeyboard
@@ -23,14 +24,15 @@ import com.johnugwuadi.keyandtempo.ui.search.epoxy.SearchController
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.search.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.sendBlocking
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.*
 
 @AndroidEntryPoint
 class SearchFragment : Fragment() {
     private val viewModel: SearchViewModel by viewModels()
+    private lateinit var searchController: SearchController
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -80,29 +82,27 @@ class SearchFragment : Fragment() {
             showKeyboard(requireView())
         }
 
-        val epoxyController = SearchController(parentFragmentManager)
+        searchController = SearchController(parentFragmentManager)
 
-        viewModel.setSearchFlow(searchFlow())
         viewModel.searchResultLiveData.observe(viewLifecycleOwner, Observer { searchState ->
             val f = when (searchState) {
-                is SearchState.Result -> renderResult(epoxyController, searchState.result)
+                is SearchState.Result -> renderResult(searchState.result)
                 is SearchState.Error -> renderError(searchState.errorMessage)
                 is SearchState.NoResults -> renderNoResults(searchState.failedQuery)
                 is SearchState.NoSearch -> renderDefaultState()
-                is SearchState.Loading -> renderLoadingState(epoxyController)
             }
         })
-        epoxy_recycler_view.setController(epoxyController)
+        epoxy_recycler_view.setController(searchController)
     }
 
-    private fun renderLoadingState(searchController: SearchController) {
+    private fun renderLoadingState() {
         searchController.setData(null)
         epoxy_recycler_view.visibility = View.VISIBLE
         no_result_error.visibility = View.GONE
         search_error.visibility = View.GONE
     }
 
-    private fun renderResult(searchController: SearchController, searchResult: SearchResult) {
+    private fun renderResult(searchResult: SearchResult) {
         searchController.setData(searchResult)
         epoxy_recycler_view.visibility = View.VISIBLE
         no_result_error.visibility = View.GONE
@@ -254,20 +254,15 @@ class SearchFragment : Fragment() {
         }
     }
 
+    @ExperimentalCoroutinesApi
     private fun setupEditTextListeners() {
-        search_edittext.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(editable: Editable) {
-                if (editable.isNotEmpty()) {
-                    search_clear_button.visibility = View.VISIBLE
-                } else {
-                    search_clear_button.visibility = View.GONE
-                }
-            }
+        setupEditTextClearButtonListener()
+        setupEditTextDoneButtonListener()
+        setupEditTextBackPressedListener()
+        setupEditTextQueryListener()
+    }
 
-            override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
-            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
-        })
-
+    private fun setupEditTextDoneButtonListener() {
         search_edittext.setOnEditorActionListener { textView, actionId, keyEvent ->
             when (actionId) {
                 EditorInfo.IME_ACTION_DONE -> {
@@ -281,7 +276,24 @@ class SearchFragment : Fragment() {
                 else -> false
             }
         }
+    }
 
+    private fun setupEditTextClearButtonListener() {
+        search_edittext.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(editable: Editable) {
+                if (editable.isNotEmpty()) {
+                    search_clear_button.visibility = View.VISIBLE
+                } else {
+                    search_clear_button.visibility = View.GONE
+                }
+            }
+
+            override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
+            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
+        })
+    }
+
+    private fun setupEditTextBackPressedListener() {
         search_edittext.setOnBackListener(object :
             SearchEditText.OnBackPressedListener {
             override fun onBackPressed() {
@@ -293,9 +305,18 @@ class SearchFragment : Fragment() {
         })
     }
 
+    @ExperimentalCoroutinesApi
+    @FlowPreview
+    private fun setupEditTextQueryListener() {
+        createSearchFlow()
+            .onEach { renderLoadingState() }
+            .debounce(3000)
+            .onEach { viewModel.search(it) }
+            .launchIn(lifecycleScope)
+    }
 
     @ExperimentalCoroutinesApi
-    private fun searchFlow(): Flow<String> = callbackFlow {
+    private fun createSearchFlow(): Flow<String> = callbackFlow {
         val callback = object : TextWatcher {
             override fun afterTextChanged(editable: Editable) {
                 sendBlocking(editable.toString())
