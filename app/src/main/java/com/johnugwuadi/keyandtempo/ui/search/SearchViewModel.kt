@@ -21,7 +21,6 @@ class SearchViewModel @ViewModelInject constructor(
     private val itemAmount = 3
 
     suspend fun search(query: String) {
-        Log.e("Search", query)
         if (this.query == query) {
             return
         }

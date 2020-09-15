@@ -309,8 +309,14 @@ class SearchFragment : Fragment() {
     @FlowPreview
     private fun setupEditTextQueryListener() {
         createSearchFlow()
-            .onEach { renderLoadingState() }
-            .debounce(3000)
+            .onEach {
+                if (it.isBlank()) {
+                    renderDefaultState()
+                } else {
+                    renderLoadingState()
+                }
+            }
+            .debounce(300)
             .onEach { viewModel.search(it) }
             .launchIn(lifecycleScope)
     }
